@@ -1,7 +1,7 @@
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from ttkwidgets.autocomplete import AutocompleteCombobox
+# from ttkwidgets.autocomplete import AutocompleteCombobox
 from datetime import date
 
 
@@ -75,19 +75,19 @@ class HummelApp:
         # Bestimmung Validator searchable dropdown
         self.man_val_label = tk.Label(root, text="Bestimmung Validator:")
         self.man_val_label.grid(row=3, column=0, padx=10, pady=10)
-        self.man_val_dropdown = AutocompleteCombobox(root, values=bees_options)
+        self.man_val_dropdown = ttk.Combobox(root, values=bees_options)
         self.man_val_dropdown.grid(row=3, column=1, padx=10, pady=10)
 
         # Best Guess searchable dropdown
         self.best_guess_label = tk.Label(root, text="Best Guess:")
         self.best_guess_label.grid(row=4, column=0, padx=10, pady=10)
-        self.best_guess_dropdown = AutocompleteCombobox(root, values=bees_options)
+        self.best_guess_dropdown = ttk.Combobox(root, values=bees_options)
         self.best_guess_dropdown.grid(row=4, column=1, padx=10, pady=10)
 
         # Food Plant searchable dropdown
         self.food_plant_label = tk.Label(root, text="Food Plant:")
         self.food_plant_label.grid(row=5, column=0, padx=10, pady=10)
-        self.food_plant_dropdown = AutocompleteCombobox(root, values=plants_options)
+        self.food_plant_dropdown = ttk.Combobox(root, values=plants_options)
         self.food_plant_dropdown.grid(row=5, column=1, padx=10, pady=10)
 
         # Geschlecht dropdown
