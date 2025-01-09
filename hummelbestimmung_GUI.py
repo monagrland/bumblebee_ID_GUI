@@ -5,10 +5,11 @@ from datetime import datetime
 import os
 import webbrowser
 import pyperclip
+from searchable_combobox import SearchableComboBox
 
 # ------Load Meta Data------
 meta_file = "meta.csv"
-meta_data = pd.read_csv(meta_file, sep=";")
+meta_data = pd.read_csv(meta_file, sep=";", encoding="latin-1")
 
 validator_options = meta_data["validator"].dropna().unique().tolist()
 bees_options = meta_data["bees"].dropna().unique().tolist()
@@ -44,6 +45,7 @@ data_todo = data_all[
 ]
 data_todo = data_todo.reset_index(drop=True)
 
+
 # ------Tkinter Application------
 class HummelApp:
     def __init__(self, root):
@@ -52,6 +54,7 @@ class HummelApp:
         
         self.current_index = 0
         self.previous_id = data_todo["id"].iloc[0]
+
         # Dropdown for observation selection
         self.row_label = tk.Label(root, text="Beobachtung wählen:")
         self.row_label.grid(row=0, column=0, padx=10, pady=10)
@@ -59,8 +62,6 @@ class HummelApp:
         self.row_dropdown = ttk.Combobox(root, values=data_todo["id"].tolist(), state="readonly")
         self.row_dropdown.grid(row=0, column=1, padx=10, pady=10)
         self.row_dropdown.current(0)
-        
-        # Bind the change event of the dropdown to a method
         self.row_dropdown.bind("<<ComboboxSelected>>", self.row_selected)
         
         # Buttons for navigation
@@ -83,33 +84,33 @@ class HummelApp:
         self.validator_dropdown = ttk.Combobox(root, values=validator_options, state="readonly")
         self.validator_dropdown.grid(row=3, column=1, padx=10, pady=10)
 
-        # Bestimmung Validator searchable dropdown
+        # Searchable combobox for bees
         self.man_val_label = tk.Label(root, text="Bestimmung Validator:")
         self.man_val_label.grid(row=4, column=0, padx=10, pady=10)
-        self.man_val_dropdown = ttk.Combobox(root, values=bees_options)
+        self.man_val_dropdown = SearchableComboBox(root, bees_options)
         self.man_val_dropdown.grid(row=4, column=1, padx=10, pady=10)
 
-        # Best Guess searchable dropdown
+        # Searchable combobox for best_guess
         self.best_guess_label = tk.Label(root, text="Best Guess:")
         self.best_guess_label.grid(row=5, column=0, padx=10, pady=10)
-        self.best_guess_dropdown = ttk.Combobox(root, values=bees_options)
+        self.best_guess_dropdown = SearchableComboBox(root, bees_options)
         self.best_guess_dropdown.grid(row=5, column=1, padx=10, pady=10)
 
-        # Food Plant searchable dropdown
+        # Searchable combobox for plants
         self.food_plant_label = tk.Label(root, text="Food Plant:")
         self.food_plant_label.grid(row=6, column=0, padx=10, pady=10)
-        self.food_plant_dropdown = ttk.Combobox(root, values=plants_options)
+        self.food_plant_dropdown = SearchableComboBox(root, plants_options)
         self.food_plant_dropdown.grid(row=6, column=1, padx=10, pady=10)
 
         # Geschlecht dropdown
         self.gender_label = tk.Label(root, text="Geschlecht:")
-        self.gender_label.grid(row=6, column=0, padx=10, pady=10)
+        self.gender_label.grid(row=7, column=0, padx=10, pady=10)
         self.gender_dropdown = ttk.Combobox(root, values=gender_options, state="readonly")
-        self.gender_dropdown.grid(row=6, column=1, padx=10, pady=10)
+        self.gender_dropdown.grid(row=7, column=1, padx=10, pady=10)
 
         # Submit button
         self.submit_button = tk.Button(root, text="SPEICHERN", command=self.submit_data)
-        self.submit_button.grid(row=7, column=0, columnspan=2, pady=20)
+        self.submit_button.grid(row=8, column=0, columnspan=2, pady=20)
 
 
     def update_fields(self):
