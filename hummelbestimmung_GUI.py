@@ -1,4 +1,6 @@
-import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from datetime import datetime
@@ -6,6 +8,8 @@ import os
 import webbrowser
 import pyperclip
 from searchable_combobox import SearchableComboBox
+import pandas as pd
+import io
 
 # ------Load Meta Data------
 meta_file = "meta.csv"
@@ -46,6 +50,25 @@ data_todo = data_all[
 data_todo = data_todo.reset_index(drop=True)
 
 
+# Scrape the image URL
+def get_image_src(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        images = soup.find_all('img', {'class': 'app-ratio-box-image'})
+        img_sans_preview = images[:-1]
+        img_url_lst = []
+        for img in img_sans_preview:
+            url_ending = img['src'].rsplit('?')[0]
+            img_url_lst.append(f"https://observation.org{url_ending}")
+        if len(img_url_lst) != 0:
+            return img_url_lst
+        else:
+            return "Image tag with the specified criteria not found."
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
+
 # ------Tkinter Application------
 class HummelApp:
     def __init__(self, root):
@@ -64,7 +87,11 @@ class HummelApp:
         self.row_dropdown.current(0)
         self.row_dropdown.bind("<<ComboboxSelected>>", self.row_selected)
         
-        # Buttons for navigation
+        # Add a canvas for the image
+        self.image_canvas = tk.Canvas(root, width=300, height=300, bg="gray")
+        self.image_canvas.grid(row=0, column=2, rowspan=8, padx=10, pady=10)
+        
+        # Navigation buttons
         self.prev_button = tk.Button(root, text="Vorherige Beobachtung", command=self.previous_row)
         self.prev_button.grid(row=1, column=0, padx=10, pady=10)
 
@@ -110,8 +137,93 @@ class HummelApp:
 
         # Submit button
         self.submit_button = tk.Button(root, text="SPEICHERN", command=self.submit_data)
-        self.submit_button.grid(row=8, column=0, columnspan=2, pady=20)
+        self.submit_button.grid(row=9, column=0, columnspan=2, pady=20)
+        
+        # Image navigation label
+        self.image_label = tk.Label(root, text="")
+        self.image_label.grid(row=7, column=2, pady=5)
+        
+        # Add a button to load the images
+        self.load_image_button = tk.Button(root, text="Load Images", command=self.load_images)
+        self.load_image_button.grid(row=8, column=2, padx=10, pady=10)
 
+        # Frame for image navigation buttons
+        self.image_nav_frame = tk.Frame(root)
+        self.image_nav_frame.grid(row=9, column=2, pady=5)
+
+        # Add buttons for image navigation inside the frame
+        self.prev_image_button = tk.Button(self.image_nav_frame, text="< Previous Image", command=self.previous_image)
+        self.prev_image_button.pack(side="left", padx=5)
+
+        self.next_image_button = tk.Button(self.image_nav_frame, text="Next Image >", command=self.next_image)
+        self.next_image_button.pack(side="right", padx=5)
+
+    def clear_canvas(self):
+        """Clear the image canvas."""
+        self.image_canvas.delete("all")
+        self.image_canvas.config(bg="gray")  # Reset background color
+
+    def update_image_label(self):
+        """Update the label showing the current image index."""
+        if self.image_urls:
+            self.image_label.config(text=f"{self.image_index + 1}/{len(self.image_urls)}")
+        else:
+            self.image_label.config(text="")
+
+    def load_images(self):
+        """Load images for the current row."""
+        # Get the current row and fetch the link
+        current_row = data_todo.iloc[self.current_index]
+        link = current_row["link"]
+
+        if pd.notna(link) and link.strip():
+            # Scrape the image sources
+            self.image_urls = get_image_src(link)
+            if self.image_urls:
+                self.image_index = 0  # Reset index
+                self.display_image(self.image_urls[self.image_index])
+            else:
+                messagebox.showerror("Error", "No images found for the selected link.")
+                self.image_urls = []
+                self.clear_canvas()
+        else:
+            messagebox.showerror("Error", "No valid link found for this row.")
+            self.image_urls = []
+
+        self.update_image_label()  # Update the image label
+
+    def display_image(self, image_src):
+        try:
+            response = requests.get(image_src, stream=True)
+            response.raise_for_status()
+            img_data = response.content
+
+            # Open the image using Pillow
+            img = Image.open(io.BytesIO(img_data))
+            img = img.resize((300, 300), Image.LANCZOS)  # Resize to fit the canvas
+            img_tk = ImageTk.PhotoImage(img)
+
+            # Clear the canvas and display the image
+            self.clear_canvas()
+            self.image_canvas.create_image(0, 0, anchor="nw", image=img_tk)
+            self.image_canvas.image = img_tk  # Keep a reference to avoid garbage collection
+        except Exception as e:
+            print(f"Error displaying image: {e}")
+            messagebox.showerror("Error", "Failed to load the image.")
+            
+    def next_image(self):
+        """Show the next image in the list."""
+        if self.image_urls and self.image_index < len(self.image_urls) - 1:
+            self.image_index += 1
+            self.display_image(self.image_urls[self.image_index])
+        self.update_image_label()
+
+    def previous_image(self):
+        """Show the previous image in the list."""
+        if self.image_urls and self.image_index > 0:
+            self.image_index -= 1
+            self.display_image(self.image_urls[self.image_index])
+        self.update_image_label()
 
     def update_fields(self):
         # Load current row data into fields
@@ -136,6 +248,7 @@ class HummelApp:
         self.update_fields()
         
         self.previous_id = selected_id
+        self.clear_canvas()  # Clear the canvas when changing the row
 
     def previous_row(self):
         # Save changes before moving to the previous row
@@ -144,6 +257,7 @@ class HummelApp:
         if self.current_index > 0:
             self.current_index -= 1
             self.update_fields()
+            self.clear_canvas()  # Clear the canvas when changing the row
     
     def next_row(self):
         # Save changes before moving to the next row
@@ -152,6 +266,7 @@ class HummelApp:
         if self.current_index < len(data_todo) - 1:
             self.current_index += 1
             self.update_fields()
+            self.clear_canvas()  # Clear the canvas when changing the row
 
     def save_current_row(self):
         # Get the current row based on the dropdown value
