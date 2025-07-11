@@ -32,23 +32,9 @@ def select_file():
     root.destroy()
     return file_path
 
-def read_csv_flexible(filepath):
-    for encoding in ['utf-8', 'cp1252', 'latin1']:
-        try:
-            df = pd.read_csv(filepath, sep=',', encoding=encoding)
-            return df
-        except Exception:
-            try:
-                df = pd.read_csv(filepath, sep=';', encoding=encoding)
-                return df
-            except Exception:
-                continue
-    raise ValueError(f"Failed to read file '{filepath}' with common encodings and separators.")
-
-
 # ------Load the Data------
 data_file_path = select_file()
-data_all = read_csv_flexible(data_file_path)
+data_all = pd.read_csv(data_file_path, delimiter=";")
 
 # Ensure necessary columns exist
 required_columns = ["man_val", "best_guess", "food_plant", "gender", "validator"]
@@ -58,7 +44,7 @@ for col in required_columns:
 
 # Filter the data based on conditions
 data_todo = data_all[
-    (data_all["validator.name"].isna() | (data_all["validator.name"] == "Photo recognition api"))
+    (data_all["validator name"].isna() | (data_all["validator name"] == "Photo recognition api"))
     & (data_all["landuse"] == "AX_Landwirtschaft") & (data_all["validator"].isna() | (data_all["validator"].isin(["LK", "Test"])))
 ]
 data_todo = data_todo.reset_index(drop=True)
@@ -70,9 +56,7 @@ def get_image_src(url):
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
-        # images = soup.find_all('img', {'class': 'app-ratio-box-image'}) # old
         images = soup.find_all('img', {'class': 'app-ratio-box-image'})
-        print(images)
         img_sans_preview = images[:-1]
         img_url_lst = []
         for img in img_sans_preview:
@@ -89,13 +73,13 @@ def get_image_src(url):
 class HummelApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Hummel-Challenge")
+        self.root.title("Hummel-Challenge 2024")
         
         self.current_index = 0
         self.previous_id = data_todo["id"].iloc[0]
 
         # Dropdown for observation selection
-        self.row_label = tk.Label(root, text="Select Observation:")
+        self.row_label = tk.Label(root, text="Beobachtung wählen:")
         self.row_label.grid(row=0, column=0, padx=10, pady=10)
 
         self.row_dropdown = ttk.Combobox(root, values=data_todo["id"].tolist(), state="readonly")
@@ -108,10 +92,10 @@ class HummelApp:
         self.image_canvas.grid(row=0, column=2, rowspan=8, padx=10, pady=10)
         
         # Navigation buttons
-        self.prev_button = tk.Button(root, text="Previous Observation", command=self.previous_row)
+        self.prev_button = tk.Button(root, text="Vorherige Beobachtung", command=self.previous_row)
         self.prev_button.grid(row=1, column=0, padx=10, pady=10)
 
-        self.next_button = tk.Button(root, text="Next Observation", command=self.next_row)
+        self.next_button = tk.Button(root, text="Nächste Beobachtung", command=self.next_row)
         self.next_button.grid(row=1, column=1, padx=10, pady=10)
         
         # Buttons for opening and copying the link
@@ -128,7 +112,7 @@ class HummelApp:
         self.validator_dropdown.grid(row=3, column=1, padx=10, pady=10)
 
         # Searchable combobox for bees
-        self.man_val_label = tk.Label(root, text="Classification Validator:")
+        self.man_val_label = tk.Label(root, text="Bestimmung Validator:")
         self.man_val_label.grid(row=4, column=0, padx=10, pady=10)
         self.man_val_dropdown = SearchableComboBox(root, bees_options)
         self.man_val_dropdown.grid(row=4, column=1, padx=10, pady=10)
@@ -146,13 +130,13 @@ class HummelApp:
         self.food_plant_dropdown.grid(row=6, column=1, padx=10, pady=10)
 
         # Geschlecht dropdown
-        self.gender_label = tk.Label(root, text="Gender:")
+        self.gender_label = tk.Label(root, text="Geschlecht:")
         self.gender_label.grid(row=7, column=0, padx=10, pady=10)
         self.gender_dropdown = ttk.Combobox(root, values=gender_options, state="readonly")
         self.gender_dropdown.grid(row=7, column=1, padx=10, pady=10)
 
         # Submit button
-        self.submit_button = tk.Button(root, text="SAVE", command=self.submit_data)
+        self.submit_button = tk.Button(root, text="SPEICHERN", command=self.submit_data)
         self.submit_button.grid(row=9, column=0, columnspan=2, pady=20)
         
         # Image navigation label
