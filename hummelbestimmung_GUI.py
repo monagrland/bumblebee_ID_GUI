@@ -51,7 +51,7 @@ data_file_path = select_file()
 data_all = read_csv_flexible(data_file_path)
 
 # Ensure necessary columns exist
-required_columns = ["man_val", "best_guess", "food_plant", "gender", "validator"]
+required_columns = ["man_val", "best_guess", "food_plant", "gender", "validator", "flower"]
 for col in required_columns:
     if col not in data_all.columns:
         data_all[col] = None
@@ -87,6 +87,15 @@ def get_image_src(url):
 
 # ------Tkinter Application------
 class HummelApp:
+    def flower_yes_clicked(self):
+        """Handle the Yes checkbox being clicked for Flower Visible."""
+        if self.flower_yes_var.get():
+            self.flower_no_var.set(False)
+
+    def flower_no_clicked(self):
+        """Handle the No checkbox being clicked for Flower Visible."""
+        if self.flower_no_var.get():
+            self.flower_yes_var.set(False)
     def __init__(self, root):
         self.root = root
         self.root.title("Hummel-Challenge")
@@ -151,9 +160,28 @@ class HummelApp:
         self.gender_dropdown = ttk.Combobox(root, values=gender_options, state="readonly")
         self.gender_dropdown.grid(row=7, column=1, padx=10, pady=10)
 
+        # Flower Visible checkboxes
+        self.flower_label = tk.Label(root, text="Flower Visible:")
+        self.flower_label.grid(row=8, column=0, padx=10, pady=10)
+        
+        # Frame to hold the checkboxes
+        self.flower_frame = tk.Frame(root)
+        self.flower_frame.grid(row=8, column=1, padx=10, pady=10)
+        
+        # Create variables for the checkboxes
+        self.flower_yes_var = tk.BooleanVar()
+        self.flower_no_var = tk.BooleanVar()
+        
+        # Create the checkboxes
+        self.flower_yes = tk.Checkbutton(self.flower_frame, text="Yes", variable=self.flower_yes_var, command=self.flower_yes_clicked)
+        self.flower_yes.pack(side="left", padx=5)
+        
+        self.flower_no = tk.Checkbutton(self.flower_frame, text="No", variable=self.flower_no_var, command=self.flower_no_clicked)
+        self.flower_no.pack(side="left", padx=5)
+
         # Submit button
         self.submit_button = tk.Button(root, text="SAVE", command=self.submit_data)
-        self.submit_button.grid(row=9, column=0, columnspan=2, pady=20)
+        self.submit_button.grid(row=10, column=0, columnspan=2, pady=20)
         
         # Image navigation label
         self.image_label = tk.Label(root, text="")
@@ -241,16 +269,27 @@ class HummelApp:
             self.display_image(self.image_urls[self.image_index])
         self.update_image_label()
 
+
     def update_fields(self):
         # Load current row data into fields
         current_row = data_todo.iloc[self.current_index]
-        
         self.row_dropdown.set(current_row["id"])
         self.man_val_dropdown.set(current_row["man_val"] if current_row["man_val"] is not None else "")
         self.best_guess_dropdown.set(current_row["best_guess"] if current_row["best_guess"] is not None else "")
         self.food_plant_dropdown.set(current_row["food_plant"] if current_row["food_plant"] is not None else "")
         self.gender_dropdown.set(current_row["gender"] if current_row["gender"] is not None else "")
         self.validator_dropdown.set(current_row["validator"] if pd.notna(current_row["validator"]) else "")
+        # Set flower checkboxes
+        flower_val = current_row.get("flower", None)
+        if flower_val == "yes":
+            self.flower_yes_var.set(True)
+            self.flower_no_var.set(False)
+        elif flower_val == "no":
+            self.flower_yes_var.set(False)
+            self.flower_no_var.set(True)
+        else:
+            self.flower_yes_var.set(False)
+            self.flower_no_var.set(False)
 
     def row_selected(self, event):
         # Save the current row data before switching to the new row
@@ -284,29 +323,43 @@ class HummelApp:
             self.update_fields()
             self.clear_canvas()  # Clear the canvas when changing the row
 
+
     def save_current_row(self):
         # Get the current row based on the dropdown value
         current_id = int(self.row_dropdown.get())
         selection = data_todo[data_todo["id"] == current_id].index[0]
-    
         # Save changes to the data_todo DataFrame
         data_todo.loc[selection, "man_val"] = self.man_val_dropdown.get()
         data_todo.loc[selection, "best_guess"] = self.best_guess_dropdown.get()
         data_todo.loc[selection, "food_plant"] = self.food_plant_dropdown.get()
         data_todo.loc[selection, "gender"] = self.gender_dropdown.get()
         data_todo.loc[selection, "validator"] = self.validator_dropdown.get()
+        # Save flower value
+        if self.flower_yes_var.get():
+            data_todo.loc[selection, "flower"] = "yes"
+        elif self.flower_no_var.get():
+            data_todo.loc[selection, "flower"] = "no"
+        else:
+            data_todo.loc[selection, "flower"] = "unknown"
         
+
     def save_previous_row(self):
         # Get the current row based on the dropdown value
         current_id = int(self.previous_id)
         selection = data_todo[data_todo["id"] == current_id].index[0]
-    
         # Save changes to the data_todo DataFrame
         data_todo.loc[selection, "man_val"] = self.man_val_dropdown.get()
         data_todo.loc[selection, "best_guess"] = self.best_guess_dropdown.get()
         data_todo.loc[selection, "food_plant"] = self.food_plant_dropdown.get()
         data_todo.loc[selection, "gender"] = self.gender_dropdown.get()
         data_todo.loc[selection, "validator"] = self.validator_dropdown.get()
+        # Save flower value
+        if self.flower_yes_var.get():
+            data_todo.loc[selection, "flower"] = "yes"
+        elif self.flower_no_var.get():
+            data_todo.loc[selection, "flower"] = "no"
+        else:
+            data_todo.loc[selection, "flower"] = "unknown"
     
     def open_link(self):
         # Open the link in the default web browser
@@ -326,18 +379,19 @@ class HummelApp:
         else:
             messagebox.showerror("Error", "No valid link found for this row.")
     
+
     def submit_data(self):
         # Save current row data
         self.save_current_row()
         for index, row in data_todo.iterrows():
             current_id = row["id"]
             selection = data_all[data_all["id"] == current_id].index[0]
-        
             data_all.loc[selection, "validator"] = row["validator"]
             data_all.loc[selection, "man_val"] = row["man_val"]
             data_all.loc[selection, "best_guess"] = row["best_guess"]
             data_all.loc[selection, "food_plant"] = row["food_plant"]
             data_all.loc[selection, "gender"] = row["gender"]
+            data_all.loc[selection, "flower"] = row["flower"]
 
         # File save dialog
         default_dir = os.path.dirname(data_file_path)
