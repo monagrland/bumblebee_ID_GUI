@@ -1,124 +1,155 @@
 validator;bees;plants
-JM;Bombus bohemicus/vestalis;Beinwell
-SO;Bombus campestris;blau
-LK;Bombus hortorum;blaulila
-Test;Bombus hortorum agg.;blaurosa
-;Bombus hypnorum;blauviolett
-;Bombus lapidarius;blauweiﬂ
-;Bombus lucorum;Blutweiderich
-;Bombus lucorum agg.;Borretsch
-;Bombus muscorum;Brombeere
-;Bombus pascuorum;Cosmea weiﬂ
-;Bombus pascuorum agg.;Dahlie rot
-;Bombus pratorum;Distel pink
-;Bombus rupestris;Distel weiﬂ
-;Bombus spec.;Dost
-;Bombus sylvarum;Eisenkraut
-;Bombus sylvarum/veteranus;Fetthenne pink
-;Bombus sylvestris;Fingerhut
-;Bombus sylvestris/norvegicus;Flockenblume 
-;Bombus terrestris;Flockenblume lila
-;Bombus vestalis;Flockenblume pink
-;Bombus vestalis/bohemicus;Flockenblume rosa
-;Bombus veteranus;Flockenblume violett
-;Fliege;Gamander gr¸ngelb
-;;gelb
-;;gelbrot
-;;Glockenblume
-;;Glockenblume blau
-;;Glockenblume weiﬂ
-;;Golddistel
-;;gr¸n
-;;Greiskraut
-;;Gurke/K¸rbis
-;;hellblau
-;;hellgelb
-;;hellrosa
-;;Hibiskus 
-;;Hibiskus pink
-;;Hibiskus rosa
-;;Hohlzahn weiﬂ
-;;Hornklee
-;;Hortensie weiﬂ
-;;Jakobskreuzkraut
-;;Johanniskraut
-;;Kˆnigskerze
-;;Kapuzinerkresse rot
-;;Katzenminze
-;;Klette pink
-;;Klette pink/ violett
-;;Knautie pink
-;;Kornblume
-;;Kornblume weiﬂ
-;;Kugeldistel
-;;Kugeldistel 
-;;Lˆwenzahn
-;;Lathyrus pink
-;;Lauch
-;;Lauch pink
-;;Lauch weiﬂ
-;;Lavendel blau
-;;Lavendel weiﬂ
-;;Leinkraut gelb
-;;lila
-;;lila, weiﬂ
-;;lilablau 
-;;Linde
-;;Minze rosa
-;;Mohn
-;;Natternkopf
-;;orange
-;;Phacelia
-;;pink
-;;pink/rot
-;;Platterbse pink
-;;Rainfarn
-;;rosa
-;;rot
-;;Rotklee
-;;rotweiﬂ
-;;Schmalbl‰ttriges Weidenrˆschen
-;;Sommerflieder 
-;;Sommerflieder blauviolett
-;;Sommerflieder lila
-;;Sommerflieder pink
-;;Sommerflieder violett
-;;Sommerflieder weiﬂ
-;;Sonchus
-;;Sonnenblume
-;;Sonnenblume rot
-;;Sonnenhut 
-;;Sonnenhut gelb
-;;Sonnenhut pink
-;;Sonnenhut rot
-;;Sonnenhut weiﬂ
-;;Spiere pink
-;;Steinklee
-;;Stockrose tiefrot
-;;Storchschnabel blau
-;;Storchschnabel violett
-;;Sumpfkratzdistel
-;;Tagetes gelb
-;;Taubnessel weiﬂ
-;;Tomate/Paprika
-;;violett
-;;Violett + weiﬂ
-;;Wandelrˆschen
-;;Wasserdost
-;;Wegwarte
-;;weiﬂ
-;;weiﬂgelb
-;;Weiﬂklee
-;;weiﬂpink
-;;weiﬂrot
-;;Weidenrˆﬂschen
-;;Wicke
-;;Wiesen-B‰renklau
-;;Wilde Karde
-;;Winde rosa
-;;Witwenblume
-;;Wollziest
-;;Ysop
-;;Zaunwinde
-;;Ziest 
-;;Ziest pink
+JM;Bombus bohemicus/vestalis;Achillea millefolium
+SO;Bombus campestris;Agastache sp
+LK;Bombus hortorum;Alcea rosea
+Test;Bombus hortorum agg.;Allium sp
+;Bombus hypnorum;Allium sphaerocephalon
+;Bombus lapidarius;Anchusa officinalis
+;Bombus lucorum;Arctium lappa
+;Bombus lucorum agg.;Arctium minus
+;Bombus muscorum;Arctium sp
+;Bombus pascuorum;Arctium tomentosum
+;Bombus pascuorum agg.;Armeria sp
+;Bombus pratorum;Aruncus sp
+;Bombus rupestris;Asteraceae sp
+;Bombus spec.;Borago officinalis
+;Bombus sylvarum;Brassicaceae sp
+;Bombus sylvarum/veteranus;Bryonia sp
+;Bombus sylvestris;Buddleja davidii
+;Bombus sylvestris/norvegicus;Buddleja sp
+;Bombus terrestris;Calistegia sp
+;Bombus vestalis;Calluna sp
+;Bombus vestalis/bohemicus;Calystegia sepium
+;Bombus veteranus;Cardamine sp
+;Fliege;Cardueae cfstoebe
+;;Cardueae crispus
+;;Cardueae jacea
+;;Cardueae palustre
+;;Cardueae phrygia
+;;Cardueae sp
+;;Cardueae stoebe
+;;Cardueae vulgare
+;;Carduus nutans
+;;Carlina vulgaris
+;;Centaurea cyanus
+;;Cichorioideae sp
+;;Cichorium intybus
+;;Cirsium arvense
+;;Cirsium oleraceum
+;;Convolvulus arvensis
+;;Cosmos bipinnatus
+;;Cosmos sp
+;;Cucurbitales sp
+;;Dahlia sp
+;;Daucus carota
+;;Digitalis purpurea
+;;Dipsacus fullonum
+;;Echinacea sp
+;;Echinops sp
+;;Echium vulgare
+;;Epilobium angustifolium
+;;Eupatorium cannabinum
+;;Eupatorium sp
+;;Filipendula sp
+;;Gaillardia sp
+;;Galeopsis sp
+;;Geranium pratense
+;;Geranium sp
+;;Globularia sp
+;;Helianthus annuus
+;;Helianthus cf tuberosus
+;;Helianthus sp
+;;Heracleum sp
+;;Hyacinthus sp
+;;Hydragenea sp
+;;Hypericum perforatum
+;;Hypochaeris sp
+;;Hyssopus officinalis
+;;Impatiens glandulifera
+;;Jacobaea vulgaris
+;;Jacobea ovata
+;;Jasione cf montana
+;;Knautia arvensis
+;;Lamium album
+;;Lamium maculatum
+;;Lamium purpureum
+;;Lamium sp
+;;Lathyrus latifolius
+;;Lathyrus pratensis
+;;Lavandula sp
+;;Leontodon sp
+;;Leonurus sp
+;;Limonium sp
+;;Linaria vulgaris
+;;Lotus corniculatus
+;;Lycopus europeus
+;;Lysimachia vulgaris
+;;Lythrum salicaria
+;;Malva moschata
+;;Malva sp
+;;Malva sylvestris
+;;Malva thuringiaca
+;;Medicago falcata
+;;Medicago sativa
+;;Medicago sp
+;;Melilotus albus
+;;Melilotus officinalis
+;;Melilotus sp
+;;Melissa officinalis
+;;Mentha sp
+;;Monarda sp
+;;Myosotis sp
+;;Nepeta cf nuda
+;;Nepeta sp
+;;Onobrychis viciifolia
+;;Ononis arvensis
+;;Origanum vulgare
+;;Papaver sp
+;;Perovskia atriplicifolia
+;;Phacelia tanacetifolia
+;;Plantago lanceolata
+;;Prunella grandiflora
+;;Prunella vulgaris
+;;Prunus sp
+;;Pulmonaria officinalis
+;;Raphanus oleiformis
+;;Ribes sp
+;;Rosa sp
+;;Rubus sp
+;;Salvia nemorosa
+;;Salvia sp
+;;Sanguisorba officinalis
+;;Satureja sp
+;;Saxifraga sp
+;;Scabiosa columbaria
+;;Scabiosa ochroleuca
+;;Scrophularia sp
+;;Securigera varia
+;;Sedum sp
+;;Silene sp
+;;Solidago sp
+;;Stachys germanica
+;;Stachys officinalis
+;;Stachys palustris
+;;Stachys recta
+;;Stachys sp
+;;Succisia pratensis
+;;Symphoricarpos albus
+;;Symphytum officinale
+;;Tagetes sp
+;;Tanacetum vulgare
+;;Taraxacum sp
+;;Teucrium chamaedrys
+;;Teucrium hircanicum
+;;Thymus sp
+;;Trifolium incarnatum
+;;Trifolium pratense
+;;Trifolium repens
+;;Valeriana sp
+;;Verbascum sp
+;;Veronica longifolia
+;;Veronica sp
+;;Veronica spicata
+;;Vicia cracca
+;;Vicia/Lathyrus sp
+;;Zinnia sp
