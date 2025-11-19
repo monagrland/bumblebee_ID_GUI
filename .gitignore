@@ -1,4 +1,4 @@
 data/*
 test.py
 /__pycache__/*
-.exe
+*.exe
