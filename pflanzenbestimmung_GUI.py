@@ -1,0 +1,397 @@
+import requests
+from bs4 import BeautifulSoup
+from PIL import Image, ImageTk
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+from datetime import datetime
+import os
+import webbrowser
+import pyperclip
+from searchable_combobox import SearchableComboBox
+import pandas as pd
+import io
+
+# ------Load Meta Data------
+meta_file = "meta.csv"
+meta_data = pd.read_csv(meta_file, sep=";", encoding="latin-1")
+
+validator_options = meta_data["validator"].dropna().unique().tolist() + ["None"]
+# bees_options = meta_data["bees"].dropna().unique().tolist()
+plants_options = meta_data["plants"].dropna().unique().tolist() + ["None"]
+# gender_options = ["male", "female", "unknown"]
+comments_options = meta_data["comments"].dropna().unique().tolist() + ["None"]
+
+# ------READ DATA------
+def select_file():
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', 1)
+    file_path = filedialog.askopenfilename(
+        title="Select the data file",
+        filetypes=(("CSV files", "*.csv"), ("All files", "*.*"))
+    )
+    root.destroy()
+    return file_path
+
+def read_csv_flexible(filepath):
+    for encoding in ['utf-8', 'cp1252', 'latin1']:
+        try:
+            df = pd.read_csv(filepath, sep=',', encoding=encoding)
+            return df
+        except Exception:
+            try:
+                df = pd.read_csv(filepath, sep=';', encoding=encoding)
+                return df
+            except Exception:
+                continue
+    raise ValueError(f"Failed to read file '{filepath}' with common encodings and separators.")
+
+
+# ------Load the Data------
+data_file_path = select_file()
+data_all = read_csv_flexible(data_file_path)
+
+# Ensure necessary columns exist
+required_columns = ["man_val", "best_guess", "food_plant", "gender", "validator", "flower", "flower_validator", "comment_flower"]
+for col in required_columns:
+    if col not in data_all.columns:
+        data_all[col] = None
+
+# Filter the data based on conditions
+data_todo = data_all[
+    (((data_all["validator.name"].notna()) & (data_all["validator.name"] != "Photo recognition api")) | (data_all["validator"].isin(["SO", "JM"])))
+    & (data_all["landuse"] == "AX_Landwirtschaft") 
+    & (data_all["flower_validator"].isna() | (data_all["flower_validator"].isin(["LK", "Test"])))
+    & (data_all["flower"] != "no")
+]
+data_todo = data_todo.reset_index(drop=True)
+
+if not data_todo.empty:
+    previous_id = data_todo["id"].iloc[0]
+else:
+    messagebox.showerror("Error", "No data available after filtering.")
+    previous_id = None
+
+# Scrape the image URL
+def get_image_src(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        # images = soup.find_all('img', {'class': 'app-ratio-box-image'}) # old
+        images = soup.find_all('img', {'class': 'app-ratio-box-image'})
+        # print(images)
+        img_sans_preview = images[:-1]
+        img_url_lst = []
+        for img in img_sans_preview:
+            url_ending = img['src'].rsplit('?')[0]
+            img_url_lst.append(f"https://observation.org{url_ending}")
+        if len(img_url_lst) != 0:
+            return img_url_lst
+        else:
+            return "Image tag with the specified criteria not found."
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
+
+# ------Tkinter Application------
+class HummelApp:
+    def flower_yes_clicked(self):
+        """Handle the Yes checkbox being clicked for Flower Visible."""
+        if self.flower_yes_var.get():
+            self.flower_no_var.set(False)
+
+    def flower_no_clicked(self):
+        """Handle the No checkbox being clicked for Flower Visible."""
+        if self.flower_no_var.get():
+            self.flower_yes_var.set(False)
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Hummel-Challenge")
+        
+        self.current_index = 0
+        self.previous_id = data_todo["id"].iloc[0]
+
+        # Dropdown for observation selection
+        self.row_label = tk.Label(root, text="Select Observation:")
+        self.row_label.grid(row=0, column=0, padx=10, pady=10)
+
+        self.row_dropdown = ttk.Combobox(root, values=data_todo["id"].tolist(), state="readonly")
+        self.row_dropdown.grid(row=0, column=1, padx=10, pady=10)
+        self.row_dropdown.current(0)
+        self.row_dropdown.bind("<<ComboboxSelected>>", self.row_selected)
+        
+        # Add a canvas for the image
+        self.image_canvas = tk.Canvas(root, width=300, height=300, bg="gray")
+        self.image_canvas.grid(row=0, column=2, rowspan=8, padx=10, pady=10)
+        
+        # Navigation buttons
+        self.prev_button = tk.Button(root, text="Previous Observation", command=self.previous_row)
+        self.prev_button.grid(row=1, column=0, padx=10, pady=10)
+
+        self.next_button = tk.Button(root, text="Next Observation", command=self.next_row)
+        self.next_button.grid(row=1, column=1, padx=10, pady=10)
+        
+        # Buttons for opening and copying the link
+        self.open_link_button = tk.Button(root, text="Open Link", command=self.open_link)
+        self.open_link_button.grid(row=2, column=0, padx=10, pady=10)
+        
+        self.copy_link_button = tk.Button(root, text="Copy Link", command=self.copy_link)
+        self.copy_link_button.grid(row=2, column=1, padx=10, pady=10)
+        
+        # Validator dropdown
+        self.validator_label = tk.Label(root, text="Flower Validator:")
+        self.validator_label.grid(row=3, column=0, padx=10, pady=10)
+        self.validator_dropdown = ttk.Combobox(root, values=validator_options, state="readonly")
+        self.validator_dropdown.grid(row=3, column=1, padx=10, pady=10)
+
+        # Searchable combobox for plants
+        self.flower_val_label = tk.Label(root, text="Flower Classification:")
+        self.flower_val_label.grid(row=4, column=0, padx=10, pady=10)
+        self.flower_val_dropdown = SearchableComboBox(root, plants_options)
+        self.flower_val_dropdown.grid(row=4, column=1, padx=10, pady=10)
+
+        # No Flower Visible checkbox
+        self.no_flower_var = tk.BooleanVar()
+        self.no_flower_checkbox = tk.Checkbutton(root, text="No Flower Visible", variable=self.no_flower_var)
+        self.no_flower_checkbox.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
+
+        # Searchable combobox for Comments
+        self.comment_label = tk.Label(root, text="Comments")
+        self.comment_label.grid(row=6, column=0, padx=10, pady=10)
+        self.comment_dropdown = SearchableComboBox(root, comments_options)
+        self.comment_dropdown.grid(row=6, column=1, padx=10, pady=10)
+
+        # Submit button
+        self.submit_button = tk.Button(root, text="SAVE", command=self.submit_data)
+        self.submit_button.grid(row=10, column=0, columnspan=2, pady=20)
+        
+        # Image navigation label
+        self.image_label = tk.Label(root, text="")
+        self.image_label.grid(row=7, column=2, pady=5)
+        
+        # Add a button to load the images
+        self.load_image_button = tk.Button(root, text="Load Images", command=self.load_images)
+        self.load_image_button.grid(row=8, column=2, padx=10, pady=10)
+
+        # Frame for image navigation buttons
+        self.image_nav_frame = tk.Frame(root)
+        self.image_nav_frame.grid(row=9, column=2, pady=5)
+
+        # Add buttons for image navigation inside the frame
+        self.prev_image_button = tk.Button(self.image_nav_frame, text="< Previous Image", command=self.previous_image)
+        self.prev_image_button.pack(side="left", padx=5)
+
+        self.next_image_button = tk.Button(self.image_nav_frame, text="Next Image >", command=self.next_image)
+        self.next_image_button.pack(side="right", padx=5)
+
+        # Update event bindings to synchronize the "No Flower Visible" checkbox with the "Flower Classification" dropdown
+        self.no_flower_var.trace_add("write", self.no_flower_checkbox_changed)
+
+
+
+
+    def clear_canvas(self):
+        """Clear the image canvas."""
+        self.image_canvas.delete("all")
+        self.image_canvas.config(bg="gray")  # Reset background color
+
+    def update_image_label(self):
+        """Update the label showing the current image index."""
+        if self.image_urls:
+            self.image_label.config(text=f"{self.image_index + 1}/{len(self.image_urls)}")
+        else:
+            self.image_label.config(text="")
+
+    def load_images(self):
+        """Load images for the current row."""
+        # Get the current row and fetch the link
+        current_row = data_todo.iloc[self.current_index]
+        link = current_row["link"]
+
+        if pd.notna(link) and link.strip():
+            # Scrape the image sources
+            self.image_urls = get_image_src(link)
+            if self.image_urls:
+                self.image_index = 0  # Reset index
+                self.display_image(self.image_urls[self.image_index])
+            else:
+                messagebox.showerror("Error", "No images found for the selected link.")
+                self.image_urls = []
+                self.clear_canvas()
+        else:
+            messagebox.showerror("Error", "No valid link found for this row.")
+            self.image_urls = []
+
+        self.update_image_label()  # Update the image label
+
+    def display_image(self, image_src):
+        try:
+            response = requests.get(image_src, stream=True)
+            response.raise_for_status()
+            img_data = response.content
+
+            # Open the image using Pillow
+            img = Image.open(io.BytesIO(img_data))
+            img = img.resize((300, 300), Image.LANCZOS)  # Resize to fit the canvas
+            img_tk = ImageTk.PhotoImage(img)
+
+            # Clear the canvas and display the image
+            self.clear_canvas()
+            self.image_canvas.create_image(0, 0, anchor="nw", image=img_tk)
+            self.image_canvas.image = img_tk  # Keep a reference to avoid garbage collection
+        except Exception as e:
+            print(f"Error displaying image: {e}")
+            messagebox.showerror("Error", "Failed to load the image.")
+            
+    def next_image(self):
+        """Show the next image in the list."""
+        if self.image_urls and self.image_index < len(self.image_urls) - 1:
+            self.image_index += 1
+            self.display_image(self.image_urls[self.image_index])
+        self.update_image_label()
+
+    def previous_image(self):
+        """Show the previous image in the list."""
+        if self.image_urls and self.image_index > 0:
+            self.image_index -= 1
+            self.display_image(self.image_urls[self.image_index])
+        self.update_image_label()
+
+
+    def update_fields(self):
+        # Load current row data into fields
+        current_row = data_todo.iloc[self.current_index]
+        self.row_dropdown.set(current_row["id"])
+        self.flower_val_dropdown.set(current_row["food_plant"] if current_row["food_plant"] is not None else "")
+        self.validator_dropdown.set(current_row["flower_validator"] if pd.notna(current_row["flower_validator"]) else "")
+        self.comment_dropdown.set(current_row["comment_flower"] if pd.notna(current_row["comment_flower"]) else "")
+        # Set flower checkboxes
+        flower_val = current_row.get("flower", None)
+        if flower_val == "no":
+            self.no_flower_var.set(True)
+        else:
+            self.no_flower_var.set(False)
+
+    def row_selected(self, event):
+        # Save the current row data before switching to the new row
+        self.save_previous_row()
+
+        # Update the current_index based on the selected ID
+        selected_id = int(self.row_dropdown.get())
+        self.current_index = data_todo[data_todo["id"] == selected_id].index[0]
+
+        # After selecting, update the fields to reflect the new data
+        self.update_fields()
+        
+        self.previous_id = selected_id
+        self.clear_canvas()  # Clear the canvas when changing the row
+
+    def previous_row(self):
+        # Save changes before moving to the previous row
+        self.save_current_row()
+    
+        if self.current_index > 0:
+            self.current_index -= 1
+            self.update_fields()
+            self.clear_canvas()  # Clear the canvas when changing the row
+    
+    def next_row(self):
+        # Save changes before moving to the next row
+        self.save_current_row()
+    
+        if self.current_index < len(data_todo) - 1:
+            self.current_index += 1
+            self.update_fields()
+            self.clear_canvas()  # Clear the canvas when changing the row
+
+
+    def save_current_row(self):
+        # Get the current row based on the dropdown value
+        current_id = int(self.row_dropdown.get())
+        selection = data_todo[data_todo["id"] == current_id].index[0]
+        # Save changes to the data_todo DataFrame
+        data_todo.loc[selection, "food_plant"] = None if self.flower_val_dropdown.get() == "None" else self.flower_val_dropdown.get()
+        data_todo.loc[selection, "flower_validator"] = None if self.validator_dropdown.get() == "None" else self.validator_dropdown.get()
+        data_todo.loc[selection, "comment_flower"] = None if self.comment_dropdown.get() == "None" else self.comment_dropdown.get()
+        # Save flower value
+        if self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower":
+            data_todo.loc[selection, "flower"] = "yes"
+        elif not self.no_flower_var.get():
+            data_todo.loc[selection, "flower"] = "yes"
+        elif self.no_flower_var.get() is None:
+            data_todo.loc[selection, "flower"] = "unknown"
+        else:
+            data_todo.loc[selection, "flower"] = "no"
+
+    def save_previous_row(self):
+        # Get the current row based on the dropdown value
+        current_id = int(self.previous_id)
+        selection = data_todo[data_todo["id"] == current_id].index[0]
+        # Save changes to the data_todo DataFrame
+        data_todo.loc[selection, "food_plant"] = None if self.flower_val_dropdown.get() == "None" else self.flower_val_dropdown.get()
+        data_todo.loc[selection, "flower_validator"] = None if self.validator_dropdown.get() == "None" else self.validator_dropdown.get()
+        data_todo.loc[selection, "comment_flower"] = None if self.comment_dropdown.get() == "None" else self.comment_dropdown.get()
+        # Save flower value
+        if self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower":
+            data_todo.loc[selection, "flower"] = "yes"
+        elif not self.no_flower_var.get():
+            data_todo.loc[selection, "flower"] = "yes"
+        elif self.no_flower_var.get() is None:
+            data_todo.loc[selection, "flower"] = "unknown"
+        else:
+            data_todo.loc[selection, "flower"] = "no"
+    
+    def open_link(self):
+        # Open the link in the default web browser
+        current_row = data_todo.iloc[self.current_index]
+        link = current_row["link"]
+        if pd.notna(link) and link.strip():
+            webbrowser.open(link)
+        else:
+            messagebox.showerror("Error", "No valid link found for this row.")
+    
+    def copy_link(self):
+        # Copy the link to the clipboard
+        current_row = data_todo.iloc[self.current_index]
+        link = current_row["link"]
+        if pd.notna(link) and link.strip():
+            pyperclip.copy(link)
+        else:
+            messagebox.showerror("Error", "No valid link found for this row.")
+    
+
+    def submit_data(self):
+        # Save current row data
+        self.save_current_row()
+        for index, row in data_todo.iterrows():
+            current_id = row["id"]
+            selection = data_all[data_all["id"] == current_id].index[0]
+            data_all.loc[selection, "flower_validator"] = row["flower_validator"]
+            data_all.loc[selection, "food_plant"] = row["food_plant"]
+            data_all.loc[selection, "flower"] = row["flower"]
+            data_all.loc[selection, "comment_flower"] = row["comment_flower"]
+
+        # File save dialog
+        default_dir = os.path.dirname(data_file_path)
+        default_filename = f"{datetime.today().strftime('%d_%m_%Y')}.csv"
+        file_path = filedialog.asksaveasfilename(
+            title="Save CSV File",
+            initialdir=default_dir,
+            initialfile=default_filename,
+            filetypes=(("CSV files", "*.csv"), ("All files", "*.*"))
+        )
+
+        if file_path:
+            data_all.to_csv(file_path, sep=";", index=False)
+            messagebox.showinfo("Success", f"Data submitted successfully! File saved as {file_path}")
+
+    # Update the `no_flower_checkbox_changed` method to target the "Flower Classification" dropdown
+    def no_flower_checkbox_changed(self, *args):
+        if self.no_flower_var.get():
+            self.flower_val_dropdown.set("No Flower")
+
+
+# Run the app
+root = tk.Tk()
+app = HummelApp(root)
+root.mainloop()
