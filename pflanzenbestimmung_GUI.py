@@ -59,7 +59,7 @@ for col in required_columns:
 
 # Filter the data based on conditions
 data_todo = data_all[
-    (((data_all["validator.name"].notna()) & (data_all["validator.name"] != "Photo recognition api")) | (data_all["validator"].isin(["SO", "JM"])))
+    (((data_all["validator.name"].notna()) & (data_all["validator.name"] != "Photo recognition api") & (data_all["validator.name"] != "Automatic validation")) | (data_all["validator"].isin(["SO", "JM"])))
     & (data_all["landuse"] == "AX_Landwirtschaft") 
     & (data_all["flower_validator"].isna() | (data_all["flower_validator"].isin(["LK", "Test"])))
     & (data_all["flower"] != "no")
