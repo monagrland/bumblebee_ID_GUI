@@ -59,6 +59,10 @@ for col in required_columns:
     if col not in data_all.columns:
         data_all[col] = None
 
+# Rows with a food_plant get the validator as flower_validator
+has_food_plant = data_all["food_plant"].notna()
+data_all.loc[has_food_plant, "flower_validator"] = data_all.loc[has_food_plant, "validator"]
+
 # Filter the data based on conditions
 data_todo = data_all[
     (((data_all["validator.name"].notna()) & (data_all["validator.name"] != "Photo recognition api") & (data_all["validator.name"] != "Automatic validation")) | (data_all["validator"].isin(["SO", "JM"])))
