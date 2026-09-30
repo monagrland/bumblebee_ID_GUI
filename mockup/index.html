@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hummel ID Mockup</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #f0eee8;
+  --border: #e2dfd6;
+  --text: #1f1e1b;
+  --muted: #6b675e;
+  --accent: #c98a00;
+  --accent-strong: #a66f00;
+  --accent-soft: #fdf1d3;
+  --ok: #2f7d4f;
+  --ok-soft: #e1f2e7;
+  --warn: #9a5b00;
+  --warn-soft: #fff0d6;
+  --err: #b3261e;
+  --err-soft: #fbe3e1;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161512; --surface: #1f1e1a; --surface-2: #2a2823; --border: #37342d;
+    --text: #efece4; --muted: #a39e92; --accent: #f0b429; --accent-strong: #ffc94d;
+    --accent-soft: #3a2f14; --ok: #6fcf97; --ok-soft: #1c3326; --warn: #f5b454;
+    --warn-soft: #3a2b12; --err: #f28b82; --err-soft: #3b1d1b;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161512; --surface: #1f1e1a; --surface-2: #2a2823; --border: #37342d;
+  --text: #efece4; --muted: #a39e92; --accent: #f0b429; --accent-strong: #ffc94d;
+  --accent-soft: #3a2f14; --ok: #6fcf97; --ok-soft: #1c3326; --warn: #f5b454;
+  --warn-soft: #3a2b12; --err: #f28b82; --err-soft: #3b1d1b;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 1000;
+}
+.brand { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.brand .dot { width: 22px; height: 22px; border-radius: 50%;
+  background: repeating-linear-gradient(0deg, #1f1e1b 0 5px, #f0b429 5px 10px); }
+.file { color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+.saved { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--ok-soft); color: var(--ok); }
+.saved.pending { background: var(--warn-soft); color: var(--warn); }
+.progress { flex: 1; min-width: 160px; display: flex; align-items: center; gap: 10px; }
+.bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--accent); transition: width .3s; }
+.progress span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.topbar .right { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+
+.btn {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
+  padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #1f1e1b; font-weight: 600; }
+.btn.primary:hover { background: var(--accent-strong); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn:disabled { opacity: .45; cursor: default; }
+kbd { font: 11px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--border);
+  border-bottom-width: 2px; border-radius: 4px; background: var(--surface-2); color: var(--muted); }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px;
+  background: var(--accent-soft); color: var(--text); font-size: 13px; border: 1px solid transparent; }
+select.chip { appearance: none; padding-right: 24px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 13px) 55%, calc(100% - 9px) 55%; background-size: 4px 4px; background-repeat: no-repeat; }
+
+/* ---------- Layout ---------- */
+main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr); gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* ---------- Image viewer ---------- */
+.viewer { display: flex; flex-direction: column; overflow: hidden; align-self: start; position: sticky; top: 72px; }
+@media (max-width: 900px) { .viewer { position: static; } }
+.stage { position: relative; height: min(62vh, 620px); min-height: 320px; background: #111; overflow: hidden; cursor: grab; touch-action: none; }
+.stage.dragging { cursor: grabbing; }
+.stage img { position: absolute; left: 50%; top: 50%; max-width: none; user-select: none; -webkit-user-drag: none; transform-origin: center; }
+.stage .overlay { position: absolute; inset: 0; display: grid; place-items: center; color: #eee; text-align: center; padding: 24px; }
+.stage .overlay .box { background: rgba(0,0,0,.6); padding: 16px 20px; border-radius: 10px; max-width: 420px; }
+.zoombar { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; background: rgba(0,0,0,.55); padding: 4px; border-radius: 8px; }
+.zoombar button { background: transparent; border: 0; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-size: 16px; }
+.zoombar button:hover { background: rgba(255,255,255,.15); }
+.counter { position: absolute; left: 12px; top: 12px; background: rgba(0,0,0,.55); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 6px; }
+.thumbs { display: flex; gap: 8px; padding: 10px; overflow-x: auto; border-top: 1px solid var(--border); align-items: center; }
+.thumbs img { width: 72px; height: 54px; object-fit: cover; border-radius: 6px; border: 2px solid transparent; cursor: pointer; opacity: .75; }
+.thumbs img.active { border-color: var(--accent); opacity: 1; }
+.thumbs .spacer { flex: 1; }
+
+/* ---------- Side panel ---------- */
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.obs-head { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.obs-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.obs-title h2 { margin: 0; font-size: 17px; }
+.obs-title .id { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; }
+.links { display: flex; gap: 8px; flex-wrap: wrap; }
+#map { height: 170px; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+
+.form { padding: 4px 16px 16px; }
+.section { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.section:first-child { border-top: 0; margin-top: 0; }
+.section h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.section.readonly { opacity: .55; pointer-events: none; }
+.section.readonly h3::after { content: "read only in this preset"; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; }
+.field { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+@media (max-width: 480px) { .field { grid-template-columns: 1fr; gap: 4px; } }
+.field label { color: var(--muted); font-size: 13px; }
+.field .req { color: var(--err); }
+input[type=text], select.input {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+}
+input[type=text]:focus, select.input:focus, .btn:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; border-right: 1px solid var(--border); }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: var(--accent-soft); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.check { display: inline-flex; align-items: center; gap: 8px; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.alert { display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin: 4px 0 10px; }
+.alert.warn { background: var(--warn-soft); color: var(--warn); }
+.alert b { color: var(--text); }
+.actions { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Filter drawer ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 1500; display: none; }
+.drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(520px, 100%); background: var(--surface);
+  z-index: 1600; transform: translateX(100%); transition: transform .2s; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
+.drawer.open { transform: none; }
+.drawer.open + .scrim, .scrim.show { display: block; }
+.drawer header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.drawer header h2 { margin: 0; font-size: 17px; }
+.drawer .body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.drawer footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+.preset-list { display: flex; flex-direction: column; gap: 6px; }
+.preset { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.preset.active { border-color: var(--accent); background: var(--accent-soft); }
+.preset small { color: var(--muted); }
+.cond { display: grid; grid-template-columns: 1.3fr 1fr 1.4fr auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+@media (max-width: 480px) { .cond { grid-template-columns: 1fr 1fr; } }
+.cond input, .cond select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); min-width: 0; width: 100%; }
+.label-sm { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+.match { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg);
+  padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 2000; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.mock-note { max-width: 1500px; margin: 0 auto; padding: 0 16px 24px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="dot"></span>Hummel ID</div>
+  <div class="file">📄 Challenge_2025_07_04_landuse.csv <span id="saved" class="saved">✓ saved</span></div>
+  <div class="progress">
+    <div class="bar"><div id="barFill"></div></div>
+    <span id="progressText"></span>
+  </div>
+  <div class="right">
+    <label class="chip" title="Validator is remembered for the whole session (#9)">👤
+      <select id="validator" class="chip" style="background-color:transparent;padding:0 18px 0 0;border:0">
+        <option>LK</option><option>SO</option><option>JM</option><option>Test</option>
+      </select>
+    </label>
+    <button class="btn" id="openFilters">⚙ Filter: <b id="presetName"></b></button>
+    <button class="btn ghost" id="themeBtn" title="Toggle theme">◐</button>
+  </div>
+</header>
+
+<main>
+  <!-- Image viewer -->
+  <section class="card viewer">
+    <div class="stage" id="stage">
+      <img id="mainImg" alt="Observation photo">
+      <div class="overlay" id="imgError" hidden><div class="box" id="imgErrorText"></div></div>
+      <div class="counter" id="imgCounter"></div>
+      <div class="zoombar">
+        <button id="zoomOut" title="Zoom out (−)">−</button>
+        <button id="zoomReset" title="Fit (0)">⤢</button>
+        <button id="zoomIn" title="Zoom in (+)">+</button>
+      </div>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </section>
+
+  <!-- Side panel -->
+  <aside class="side">
+    <section class="card">
+      <div class="obs-head">
+        <div class="obs-title">
+          <h2 id="obsSpecies"></h2>
+          <span class="id" id="obsId"></span>
+        </div>
+        <dl class="meta" id="obsMeta"></dl>
+        <div class="links">
+          <button class="btn" id="openLink">↗ Open on observation.org</button>
+          <button class="btn" id="copyLink">⧉ Copy link</button>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="card">
+      <div class="form">
+        <div class="section">
+          <h3>📷 Photo</h3>
+          <div class="field">
+            <label>Flower visible</label>
+            <div class="seg" data-field="flower">
+              <button data-v="yes">Yes</button><button data-v="no">No</button><button data-v="unknown">Unsure</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="beeSection">
+          <h3>🐝 Bumblebee</h3>
+          <div class="field">
+            <label for="manVal">Species</label>
+            <input type="text" id="manVal" list="beeList" placeholder="Type to search…">
+          </div>
+          <div id="gbifWarn"></div>
+          <div class="field">
+            <label for="bestGuess">Best guess</label>
+            <input type="text" id="bestGuess" list="beeList" placeholder="Optional">
+          </div>
+          <div class="field">
+            <label>Gender <span class="req">*</span></label>
+            <div class="seg" data-field="gender">
+              <button data-v="female">Female</button><button data-v="male">Male</button><button data-v="unknown">Unknown</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="behaviour">Behaviour</label>
+            <select class="input" id="behaviour">
+              <option value="">–</option><option>On flower</option><option>Flying</option><option>On the ground</option><option>Dead</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Mites</label>
+            <label class="check"><input type="checkbox" id="mites"> Mites visible</label>
+          </div>
+        </div>
+
+        <div class="section" id="plantSection">
+          <h3>🌼 Plant</h3>
+          <div class="field">
+            <label for="foodPlant">Food plant</label>
+            <input type="text" id="foodPlant" list="plantList" placeholder="Type to search…">
+          </div>
+          <div class="field">
+            <label for="comment">Comment</label>
+            <select class="input" id="comment"><option value="">–</option><option>unsure</option><option>flower out of focus</option><option>several plants</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="prevBtn">← Prev</button>
+        <div class="hint"><span><kbd>←</kbd><kbd>→</kbd> navigate</span><span><kbd>Enter</kbd> save &amp; next</span><span><kbd>1</kbd>–<kbd>3</kbd> gender</span></div>
+        <button class="btn primary" id="saveNext">Save &amp; next →</button>
+      </div>
+    </section>
+  </aside>
+</main>
+<p class="mock-note">Mockup with sample data – nothing is read from or written to a real file. Images are placeholders.</p>
+
+<datalist id="beeList"></datalist>
+<datalist id="plantList"></datalist>
+
+<!-- Filter drawer -->
+<aside class="drawer" id="drawer" aria-label="Filter">
+  <header>
+    <h2>Filter &amp; presets</h2>
+    <button class="btn ghost" id="closeFilters">✕</button>
+  </header>
+  <div class="body">
+    <div>
+      <p class="label-sm">Presets</p>
+      <div class="preset-list" id="presetList"></div>
+    </div>
+    <div>
+      <p class="label-sm">Conditions (all must match)</p>
+      <div id="conds"></div>
+      <button class="btn" id="addCond">+ Add condition</button>
+    </div>
+    <div>
+      <p class="label-sm">Editable sections</p>
+      <label class="check"><input type="checkbox" id="secBee"> Bumblebee</label>&nbsp;&nbsp;
+      <label class="check"><input type="checkbox" id="secPlant"> Plant</label>
+    </div>
+    <div class="match" id="matchCount"></div>
+  </div>
+  <footer>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="importPreset">⭳ Import preset</button>
+      <button class="btn" id="exportPreset">⭱ Export preset</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+    <button class="btn primary" id="applyFilters">Apply</button>
+  </footer>
+</aside>
+<div class="scrim" id="scrim"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- Mock data ----------------
+const BEES = ["Bombus terrestris agg.","Bombus lapidarius","Bombus pascuorum","Bombus hortorum agg.","Bombus hypnorum","Bombus pratorum","Bombus vestalis agg.","Bombus campestris","Bombus cryptarum","Bombus distinguendus"];
+const PLANTS = ["Achillea millefolium","Agastache spec.","Alcea rosea","Allium spec.","Centaurea cyanus","Phacelia tanacetifolia","Trifolium pratense","Taraxacum spec.","No Flower"];
+const UNLIKELY = { "Bombus cryptarum": 3, "Bombus distinguendus": 0 }; // GBIF records within 50 km (mock)
+
+const COLUMNS = ["validator.name","landuse","validator","flower_validator","flower","gender","species.name"];
+const OBS = [
+  { id: 357630597, date: "2025-06-20", species: "Bombus terrestris", lat: 52.52, lng: 13.40, place: "Berlin",        "validator.name": "Photo recognition api", landuse: "AX_Landwirtschaft", imgs: 3 },
+  { id: 357712004, date: "2025-06-21", species: "Bombus lapidarius", lat: 53.07, lng: 8.80, place: "Bremen",         "validator.name": null, landuse: "AX_Landwirtschaft", imgs: 2 },
+  { id: 357803311, date: "2025-06-22", species: "Bombus pascuorum", lat: 51.34, lng: 12.37, place: "Leipzig",       "validator.name": "Automatic validation", landuse: "AX_Landwirtschaft", imgs: 4 },
+  { id: 357910876, date: "2025-06-24", species: "Bombus",            lat: 48.14, lng: 11.58, place: "München",       "validator.name": null, landuse: "AX_Landwirtschaft", imgs: 0, imgError: "rejected" },
+  { id: 358001542, date: "2025-06-25", species: "Bombus hypnorum",   lat: 50.94, lng: 6.96, place: "Köln",           "validator.name": "Photo recognition api", landuse: "AX_Wald", imgs: 2 },
+  { id: 358104220, date: "2025-06-27", species: "Bombus hortorum",   lat: 54.32, lng: 10.13, place: "Kiel",          "validator.name": "Admin", landuse: "AX_Landwirtschaft", imgs: 3, validator: "SO", man_val: "Bombus hortorum agg.", gender: "female", flower: "yes" },
+  { id: 358190013, date: "2025-06-28", species: "Bombus pratorum",   lat: 52.37, lng: 9.73, place: "Hannover",       "validator.name": "Admin", landuse: "AX_Landwirtschaft", imgs: 2, validator: "JM", man_val: "Bombus pratorum", gender: "male", flower: "yes" },
+];
+OBS.forEach(o => { for (const k of ["validator","man_val","best_guess","gender","behaviour","mites","flower","food_plant","flower_validator","comment_flower"]) if (!(k in o)) o[k] = null; });
+
+const BUILTIN = [
+  { name: "Bumblebee validation", builtin: true, sections: { bee: true, plant: false }, conditions: [
+      { column: "validator.name", op: "in", value: ["", "Photo recognition api", "Automatic validation"] },
+      { column: "landuse", op: "equals", value: "AX_Landwirtschaft" },
+      { column: "validator", op: "in", value: ["", "LK", "Test"] } ] },
+  { name: "Plant validation", builtin: true, sections: { bee: false, plant: true }, conditions: [
+      { column: "validator", op: "not empty", value: "" },
+      { column: "landuse", op: "equals", value: "AX_Landwirtschaft" },
+      { column: "flower_validator", op: "empty", value: "" },
+      { column: "flower", op: "not equals", value: "no" } ] },
+  { name: "Everything (review)", builtin: true, sections: { bee: true, plant: true }, conditions: [] },
+];
+const OPS = ["equals","not equals","in","not in","empty","not empty"];
+
+// ---------------- State ----------------
+let presets = structuredClone(BUILTIN);
+let activePreset = 0;
+let draft = null;             // preset being edited in the drawer
+let queue = [];               // filtered observation list (ids)
+let idx = 0;
+let imgIdx = 0;
+let zoom = 1, panX = 0, panY = 0, baseScale = 1;
+const done = new Set();
+const $ = id => document.getElementById(id);
+
+try { const v = localStorage.getItem("hummel.validator"); if (v) $("validator").value = v; } catch {}
+$("validator").addEventListener("change", e => { try { localStorage.setItem("hummel.validator", e.target.value); } catch {} toast(`Validator set to ${e.target.value} – kept for all observations`); });
+
+$("beeList").innerHTML = BEES.map(b => `<option value="${b}">`).join("");
+$("plantList").innerHTML = PLANTS.map(p => `<option value="${p}">`).join("");
+
+// ---------------- Filtering ----------------
+function val(o, col) { const v = o[col]; return v == null ? "" : String(v); }
+function matches(o, c) {
+  const v = val(o, c.column);
+  const list = Array.isArray(c.value) ? c.value : String(c.value).split(",").map(s => s.trim());
+  switch (c.op) {
+    case "equals": return v === String(c.value);
+    case "not equals": return v !== String(c.value);
+    case "in": return list.includes(v);
+    case "not in": return !list.includes(v);
+    case "empty": return v === "";
+    case "not empty": return v !== "";
+  }
+  return true;
+}
+function filterObs(p) { return OBS.filter(o => p.conditions.every(c => matches(o, c))); }
+
+function applyPreset(i) {
+  activePreset = i;
+  const p = presets[i];
+  queue = filterObs(p).map(o => o.id);
+  idx = 0;
+  $("presetName").textContent = p.name;
+  $("beeSection").classList.toggle("readonly", !p.sections.bee);
+  $("plantSection").classList.toggle("readonly", !p.sections.plant);
+  render();
+}
+
+// ---------------- Rendering ----------------
+let map, marker;
+function initMap() {
+  if (!window.L) { $("map").innerHTML = '<div style="padding:16px;color:var(--muted)">Map needs internet (Leaflet).</div>'; return; }
+  map = L.map("map", { zoomControl: false, attributionControl: true }).setView([51.2, 10.4], 5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(map);
+  marker = L.circleMarker([51, 10], { radius: 8, color: "#1f1e1b", weight: 2, fillColor: "#f0b429", fillOpacity: 1 }).addTo(map);
+}
+
+function placeholder(o, n) {
+  const hues = [42, 95, 20, 130, 60];
+  const h = hues[(o.id + n) % hues.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+    <defs><radialGradient id="g" cx="${40 + n * 12}%" cy="45%" r="75%"><stop offset="0" stop-color="hsl(${h},55%,62%)"/><stop offset="1" stop-color="hsl(${h + 60},35%,22%)"/></radialGradient></defs>
+    <rect width="1200" height="900" fill="url(#g)"/>
+    <g transform="translate(${520 + n * 40} ${400 - n * 20}) rotate(${-20 + n * 15})">
+      <ellipse cx="0" cy="0" rx="120" ry="80" fill="#1b1a17"/>
+      <rect x="-40" y="-80" width="36" height="160" fill="#f0b429"/><rect x="40" y="-80" width="30" height="160" fill="#f0b429"/>
+      <circle cx="-135" cy="0" r="52" fill="#1b1a17"/>
+      <ellipse cx="10" cy="-110" rx="90" ry="40" fill="rgba(255,255,255,.55)"/>
+      <ellipse cx="60" cy="-95" rx="70" ry="30" fill="rgba(255,255,255,.4)"/>
+    </g>
+    <text x="40" y="860" font-family="sans-serif" font-size="34" fill="rgba(255,255,255,.8)">Photo ${n + 1} · ${o.id}</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+function current() { return OBS.find(o => o.id === queue[idx]); }
+
+function render() {
+  const total = queue.length;
+  const doneCount = queue.filter(id => done.has(id)).length;
+  $("barFill").style.width = total ? (doneCount / total * 100) + "%" : "0";
+  $("progressText").textContent = total ? `${doneCount} / ${total} done · #${idx + 1}` : "no observations match this filter";
+  const o = current();
+  if (!o) { $("obsSpecies").textContent = "No observations"; $("obsId").textContent = ""; $("obsMeta").innerHTML = ""; $("thumbs").innerHTML = ""; $("mainImg").hidden = true; return; }
+
+  $("obsSpecies").textContent = o.species;
+  $("obsId").textContent = "#" + o.id;
+  $("obsMeta").innerHTML = `
+    <dt>Date</dt><dd>${o.date}</dd>
+    <dt>Place</dt><dd>${o.place} (${o.lat.toFixed(2)}, ${o.lng.toFixed(2)})</dd>
+    <dt>observation.org</dt><dd>${o["validator.name"] ?? "not validated"}</dd>
+    <dt>Land use</dt><dd>${o.landuse}</dd>`;
+  if (map) { marker.setLatLng([o.lat, o.lng]); map.setView([o.lat, o.lng], 8); }
+
+  // form
+  $("manVal").value = o.man_val ?? "";
+  $("bestGuess").value = o.best_guess ?? "";
+  setSeg("gender", o.gender ?? "unknown");
+  $("behaviour").value = o.behaviour ?? "";
+  $("mites").checked = !!o.mites;
+  setSeg("flower", o.flower ?? "yes");
+  $("foodPlant").value = o.food_plant ?? "";
+  $("comment").value = o.comment_flower ?? "";
+  gbifCheck();
+
+  $("prevBtn").disabled = idx === 0;
+  imgIdx = 0;
+  renderImages();
+}
+
+function renderImages() {
+  const o = current();
+  const err = $("imgError");
+  if (o.imgError) {
+    $("mainImg").hidden = true; err.hidden = false;
+    $("imgErrorText").innerHTML = `<b>Photo was rejected on observation.org</b><br><span style="opacity:.8">The observer's photo is no longer public (status 48). Open the link to check the observation, or mark it as not identifiable.</span><br><br><button class="btn" onclick="toast('Reloading images…')">↻ Retry</button>`;
+    $("imgCounter").textContent = "0 / 0";
+    $("thumbs").innerHTML = `<span style="color:var(--muted);font-size:13px">No images</span><span class="spacer"></span><button class="btn" onclick="toast('Reloading images…')">↻ Reload</button>`;
+    return;
+  }
+  err.hidden = true; $("mainImg").hidden = false;
+  const n = o.imgs;
+  $("thumbs").innerHTML = Array.from({ length: n }, (_, i) => `<img src="${placeholder(o, i)}" data-i="${i}" class="${i === imgIdx ? "active" : ""}" alt="Thumbnail ${i + 1}">`).join("")
+    + `<span class="spacer"></span><button class="btn" id="reloadImgs" title="Images load automatically; reload if something failed">↻ Reload</button>`;
+  $("thumbs").querySelectorAll("img").forEach(t => t.onclick = () => { imgIdx = +t.dataset.i; renderImages(); });
+  $("reloadImgs").onclick = () => toast("Images reloaded");
+  $("imgCounter").textContent = `${imgIdx + 1} / ${n}`;
+  const img = $("mainImg");
+  img.onload = fit;
+  img.src = placeholder(o, imgIdx);
+}
+
+// ---------------- Zoom & pan ----------------
+function fit() {
+  const st = $("stage"), img = $("mainImg");
+  baseScale = Math.min(st.clientWidth / img.naturalWidth, st.clientHeight / img.naturalHeight);
+  zoom = 1; panX = 0; panY = 0; applyTransform();
+}
+function applyTransform() {
+  $("mainImg").style.transform = `translate(-50%,-50%) translate(${panX}px,${panY}px) scale(${baseScale * zoom})`;
+}
+function zoomBy(f) { zoom = Math.min(8, Math.max(1, zoom * f)); if (zoom === 1) { panX = panY = 0; } applyTransform(); }
+$("stage").addEventListener("wheel", e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+$("zoomIn").onclick = () => zoomBy(1.4);
+$("zoomOut").onclick = () => zoomBy(1 / 1.4);
+$("zoomReset").onclick = fit;
+let drag = null;
+$("stage").addEventListener("pointerdown", e => { if (e.target.closest(".zoombar,.overlay")) return; drag = { x: e.clientX - panX, y: e.clientY - panY }; $("stage").classList.add("dragging"); $("stage").setPointerCapture(e.pointerId); });
+$("stage").addEventListener("pointermove", e => { if (!drag || zoom === 1) return; panX = e.clientX - drag.x; panY = e.clientY - drag.y; applyTransform(); });
+$("stage").addEventListener("pointerup", () => { drag = null; $("stage").classList.remove("dragging"); });
+window.addEventListener("resize", () => { if (!$("mainImg").hidden) fit(); });
+
+// ---------------- Form ----------------
+function setSeg(field, v) {
+  document.querySelectorAll(`.seg[data-field="${field}"] button`).forEach(b => b.classList.toggle("on", b.dataset.v === v));
+}
+function getSeg(field) { return document.querySelector(`.seg[data-field="${field}"] button.on`)?.dataset.v ?? null; }
+document.querySelectorAll(".seg").forEach(s => s.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  setSeg(s.dataset.field, b.dataset.v); markDirty();
+  if (s.dataset.field === "flower" && b.dataset.v === "no") $("foodPlant").value = "No Flower";
+}));
+["manVal","bestGuess","behaviour","mites","foodPlant","comment"].forEach(id => $(id).addEventListener("input", markDirty));
+$("manVal").addEventListener("input", gbifCheck);
+
+function gbifCheck() {
+  const sp = $("manVal").value, o = current();
+  if (o && sp in UNLIKELY) {
+    $("gbifWarn").innerHTML = `<div class="alert warn">⚠ <span><b>Unlikely here:</b> GBIF has only ${UNLIKELY[sp]} records of ${sp} within 50 km of ${o.place}. Please double-check.</span></div>`;
+  } else $("gbifWarn").innerHTML = "";
+}
+
+function markDirty() { const s = $("saved"); s.textContent = "● unsaved"; s.classList.add("pending"); }
+function save(markDone = false) {
+  const o = current(); if (!o) return;
+  const p = presets[activePreset];
+  if (p.sections.bee) {
+    Object.assign(o, { validator: $("validator").value, man_val: $("manVal").value || null, best_guess: $("bestGuess").value || null,
+      gender: getSeg("gender"), behaviour: $("behaviour").value || null, mites: $("mites").checked });
+  }
+  if (p.sections.plant) {
+    Object.assign(o, { flower_validator: $("validator").value, food_plant: $("foodPlant").value || null,
+      comment_flower: $("comment").value || null });
+  }
+  o.flower = getSeg("flower");
+  if (markDone) done.add(o.id);
+  const s = $("saved"); s.textContent = "✓ saved " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); s.classList.remove("pending");
+}
+function go(d, markDone = false) { save(markDone); idx = Math.min(queue.length - 1, Math.max(0, idx + d)); render(); }
+$("prevBtn").onclick = () => go(-1);
+$("saveNext").onclick = () => { go(1, true); if (idx === queue.length - 1 && done.has(queue[idx])) toast("All observations in this filter are done 🎉"); };
+
+$("openLink").onclick = () => toast("Would open observation.org/observation/" + current()?.id);
+$("copyLink").onclick = () => { const url = "https://observation.org/observation/" + current()?.id + "/"; navigator.clipboard?.writeText(url).catch(() => {}); toast("Link copied"); };
+
+document.addEventListener("keydown", e => {
+  if ($("drawer").classList.contains("open")) { if (e.key === "Escape") closeDrawer(); return; }
+  const typing = e.target.matches("input[type=text], select");
+  if (e.key === "Enter" && !e.target.matches("button")) { e.preventDefault(); $("saveNext").click(); return; }
+  if (typing) return;
+  if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === "+" || e.key === "=") zoomBy(1.4);
+  else if (e.key === "-") zoomBy(1 / 1.4);
+  else if (e.key === "0") fit();
+  else if (["1","2","3"].includes(e.key) && presets[activePreset].sections.bee) { setSeg("gender", ["female","male","unknown"][+e.key - 1]); markDirty(); }
+});
+
+// ---------------- Filter drawer ----------------
+function openDrawer() { draft = { i: activePreset, p: structuredClone(presets[activePreset]) }; renderDrawer(); $("drawer").classList.add("open"); $("scrim").classList.add("show"); }
+function closeDrawer() { $("drawer").classList.remove("open"); $("scrim").classList.remove("show"); }
+$("openFilters").onclick = openDrawer;
+$("closeFilters").onclick = closeDrawer;
+$("scrim").onclick = closeDrawer;
+
+function renderDrawer() {
+  $("presetList").innerHTML = presets.map((p, i) => `<div class="preset ${i === draft.i ? "active" : ""}" data-i="${i}">
+    <span>${p.name}</span><small>${filterObs(p).length} obs${p.builtin ? " · built-in" : ""}</small></div>`).join("");
+  $("presetList").querySelectorAll(".preset").forEach(el => el.onclick = () => { draft = { i: +el.dataset.i, p: structuredClone(presets[+el.dataset.i]) }; renderDrawer(); });
+  $("conds").innerHTML = draft.p.conditions.map((c, k) => `<div class="cond" data-k="${k}">
+    <select data-f="column">${COLUMNS.map(col => `<option ${col === c.column ? "selected" : ""}>${col}</option>`).join("")}</select>
+    <select data-f="op">${OPS.map(op => `<option ${op === c.op ? "selected" : ""}>${op}</option>`).join("")}</select>
+    <input data-f="value" value="${Array.isArray(c.value) ? c.value.map(v => v === "" ? "(empty)" : v).join(", ") : c.value}" ${c.op.includes("empty") ? "disabled" : ""} placeholder="value, or a, b, c">
+    <button class="btn ghost" data-del title="Remove">✕</button></div>`).join("") || `<p style="color:var(--muted);margin:0 0 8px">No conditions – all observations are shown.</p>`;
+  $("conds").querySelectorAll(".cond").forEach(row => {
+    const c = draft.p.conditions[+row.dataset.k];
+    row.querySelectorAll("[data-f]").forEach(inp => inp.onchange = () => {
+      const f = inp.dataset.f;
+      c[f] = f === "value" && c.op.endsWith("in") ? inp.value.split(",").map(s => s.trim()).map(s => s === "(empty)" ? "" : s) : inp.value;
+      if (f === "op" && c.op.endsWith("in") && !Array.isArray(c.value)) c.value = c.value ? [c.value] : [""];
+      if (f === "op" && !c.op.endsWith("in") && Array.isArray(c.value)) c.value = c.value[0] ?? "";
+      markCustom(); renderDrawer();
+    });
+    row.querySelector("[data-del]").onclick = () => { draft.p.conditions.splice(+row.dataset.k, 1); markCustom(); renderDrawer(); };
+  });
+  $("secBee").checked = draft.p.sections.bee;
+  $("secPlant").checked = draft.p.sections.plant;
+  const n = filterObs(draft.p).length;
+  $("matchCount").innerHTML = `<b>${n}</b> of ${OBS.length} observations match · preset “${draft.p.name}”`;
+}
+function markCustom() {
+  if (presets[draft.i]?.builtin && !draft.p.name.endsWith("(custom)")) { draft.p.name += " (custom)"; draft.p.builtin = false; draft.i = -1; }
+}
+$("addCond").onclick = () => { draft.p.conditions.push({ column: "validator", op: "empty", value: "" }); markCustom(); renderDrawer(); };
+$("secBee").onchange = e => { draft.p.sections.bee = e.target.checked; markCustom(); renderDrawer(); };
+$("secPlant").onchange = e => { draft.p.sections.plant = e.target.checked; markCustom(); renderDrawer(); };
+$("applyFilters").onclick = () => {
+  if (draft.i === -1) { const ex = presets.findIndex(p => p.name === draft.p.name); if (ex >= 0) presets[ex] = draft.p, draft.i = ex; else { presets.push(draft.p); draft.i = presets.length - 1; } }
+  else presets[draft.i] = draft.p;
+  save(); applyPreset(draft.i); closeDrawer(); toast(`Filter “${draft.p.name}” applied`);
+};
+$("exportPreset").onclick = () => {
+  const { builtin, ...p } = draft.p;
+  const blob = new Blob([JSON.stringify({ format: "hummel-filter/1", ...p }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = p.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("Preset exported – send the .json file to your colleague");
+};
+$("importPreset").onclick = () => $("importFile").click();
+$("importFile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const p = JSON.parse(await f.text());
+    if (!Array.isArray(p.conditions) || !p.sections) throw new Error("not a filter preset");
+    delete p.format;
+    presets.push(p); draft = { i: presets.length - 1, p: structuredClone(p) }; renderDrawer();
+    toast(`Imported “${p.name}”`);
+  } catch (err) { toast("Could not import: " + err.message); }
+  e.target.value = "";
+};
+
+// ---------------- Misc ----------------
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
+window.toast = toast;
+$("themeBtn").onclick = () => {
+  const r = document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  r.dataset.theme = dark ? "light" : "dark";
+};
+
+initMap();
+applyPreset(0);
+</script>
+</body>
+</html>
