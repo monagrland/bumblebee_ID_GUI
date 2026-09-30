@@ -2,7 +2,7 @@ import io
 import os
 import tkinter as tk
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from tkinter import filedialog, messagebox, ttk
 
 import pandas as pd
@@ -316,9 +316,8 @@ class HummelApp:
         data_todo.loc[selection, "flower_validator"] = None if self.validator_dropdown.get() == "None" else self.validator_dropdown.get()
         data_todo.loc[selection, "comment_flower"] = None if self.comment_dropdown.get() == "None" else self.comment_dropdown.get()
         # Save flower value
-        if self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower":
-            data_todo.loc[selection, "flower"] = "yes"
-        elif not self.no_flower_var.get():
+        if ((self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower")
+                or not self.no_flower_var.get()):
             data_todo.loc[selection, "flower"] = "yes"
         elif self.no_flower_var.get() is None:
             data_todo.loc[selection, "flower"] = "unknown"
@@ -334,9 +333,8 @@ class HummelApp:
         data_todo.loc[selection, "flower_validator"] = None if self.validator_dropdown.get() == "None" else self.validator_dropdown.get()
         data_todo.loc[selection, "comment_flower"] = None if self.comment_dropdown.get() == "None" else self.comment_dropdown.get()
         # Save flower value
-        if self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower":
-            data_todo.loc[selection, "flower"] = "yes"
-        elif not self.no_flower_var.get():
+        if ((self.no_flower_var.get() and self.flower_val_dropdown.get() != "No Flower")
+                or not self.no_flower_var.get()):
             data_todo.loc[selection, "flower"] = "yes"
         elif self.no_flower_var.get() is None:
             data_todo.loc[selection, "flower"] = "unknown"
@@ -375,7 +373,7 @@ class HummelApp:
 
         # File save dialog
         default_dir = os.path.dirname(data_file_path)
-        default_filename = f"{datetime.today().strftime('%d_%m_%Y')}.csv"
+        default_filename = f"{datetime.now(tz=timezone.utc).strftime('%d_%m_%Y')}.csv"
         file_path = filedialog.asksaveasfilename(
             title="Save CSV File",
             initialdir=default_dir,

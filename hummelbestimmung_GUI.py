@@ -2,7 +2,7 @@ import io
 import os
 import tkinter as tk
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from tkinter import filedialog, messagebox, ttk
 
 import pandas as pd
@@ -397,7 +397,7 @@ class HummelApp:
 
         # File save dialog
         default_dir = os.path.dirname(data_file_path)
-        default_filename = f"{datetime.today().strftime('%d_%m_%Y')}.csv"
+        default_filename = f"{datetime.now(tz=timezone.utc).strftime('%d_%m_%Y')}.csv"
         file_path = filedialog.asksaveasfilename(
             title="Save CSV File",
             initialdir=default_dir,
