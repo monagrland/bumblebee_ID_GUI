@@ -1,15 +1,17 @@
+import io
+import os
+import tkinter as tk
+import webbrowser
+from datetime import datetime
+from tkinter import filedialog, messagebox, ttk
+
+import pandas as pd
+import pyperclip
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageTk
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-from datetime import datetime
-import os
-import webbrowser
-import pyperclip
+
 from searchable_combobox import SearchableComboBox
-import pandas as pd
-import io
 
 # ------Load Meta Data------
 meta_file = "meta.csv"
