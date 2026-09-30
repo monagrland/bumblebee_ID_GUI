@@ -316,7 +316,7 @@ dialog .dfoot { display: flex; justify-content: flex-end; gap: 8px; padding: 12p
       </details>
 
       <div class="actions">
-        <div class="hint"><span><kbd>←</kbd><kbd>→</kbd> navigate</span><span><kbd>Enter</kbd> done &amp; next</span><span><kbd>Esc</kbd> leave text field → letter keys work</span></div>
+        <div class="hint"><span><kbd>←</kbd><kbd>→</kbd> observation</span><span><kbd>Ctrl</kbd>+<kbd>←</kbd><kbd>→</kbd> image</span><span><kbd>Enter</kbd> done &amp; next</span><span><kbd>Esc</kbd> leave text field → letter keys work</span></div>
         <button class="btn primary" id="saveNext">Done &amp; next →</button>
       </div>
     </section>
@@ -649,6 +649,14 @@ $("copyLink").onclick = () => { navigator.clipboard?.writeText(`https://observat
 document.addEventListener("keydown", e => {
   if ($("drawer").classList.contains("open")) { if (e.key === "Escape") closeDrawer(); return; }
   if ($("saveDialog").open) return;
+  // Ctrl+←/→ switches images – also while typing in a field
+  if (e.ctrlKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    e.preventDefault();
+    const n = current()?.imgs ?? 0;
+    const next = imgIdx + (e.key === "ArrowRight" ? 1 : -1);
+    if (next >= 0 && next < n) { imgIdx = next; renderImages(); }
+    return;
+  }
   if (e.key === "Enter" && !e.target.matches("button, summary")) { e.preventDefault(); $("saveNext").click(); return; }
   if (e.target.matches("input[type=text], select")) { if (e.key === "Escape") e.target.blur(); return; }
   if (e.ctrlKey || e.altKey || e.metaKey) return;
